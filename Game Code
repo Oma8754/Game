@@ -1,0 +1,415 @@
+#include <iostream>
+#include <cstdlib> // For rand() and srand()
+#include <ctime>   // For time()
+#include <string>  // For string manipulation
+#include <cctype>  // For toupper
+
+// Function prototypes - now returning bool to indicate win/loss
+bool playHeadsOrTails();
+bool playRockPaperScissors();
+bool playTicTacToe();
+int getComputerChoice();
+std::string choiceToString(int choice);
+void drawBoard(const char board[]);
+bool checkWin(const char board[]);
+
+
+/**
+ * @brief Game Bundle Main Loop
+ * Runs four stages sequentially. Losing any stage results in a Game Over with a retry option.
+ */
+int main() {
+    // 1. Seed the random number generator using the current time.
+    std::srand(std::time(0));
+    
+    bool playAgain = true;
+
+    // Outer loop allows the player to retry the entire game bundle
+    while (playAgain) {
+        
+        bool success = true; // Tracks if the player won the current stage
+        int failedStage = 0; // Tracks which stage the player failed (1, 2, 3, or 4)
+        
+        std::cout << "===========================================" << std::endl;
+        std::cout << "       Welcome to the Game Bundle!         " << std::endl;
+        std::cout << "===========================================" << std::endl;
+        
+        // --- STAGE 1: GUESS THE NUMBER (1-10) ---
+        const int MAX_ATTEMPTS = 3;
+        const int targetNumber = (std::rand() % 10) + 1;
+        int userGuess = 0;
+        int attempts = 0;
+
+        std::cout << "\n--- Stage 1: Guess the Number (1-10) ---\n" << std::endl;
+        std::cout << "I have picked a secret number between 1 and 10." << std::endl;
+        std::cout << "You have " << MAX_ATTEMPTS << " attempts to guess it." << std::endl;
+        
+        // Main guessing loop: continues as long as the guess is wrong AND attempts remain.
+        while (userGuess != targetNumber && attempts < MAX_ATTEMPTS) {
+            std::cout << "Attempt " << (attempts + 1) << " of " << MAX_ATTEMPTS << " - Enter your guess: ";
+            
+            if (!(std::cin >> userGuess)) {
+                std::cout << "Invalid input. Please enter a valid number." << std::endl;
+                std::cin.clear();
+                std::cin.ignore(10000, '\n');
+                continue; // Skip incrementing attempts for invalid input
+            }
+
+            attempts++; // Count the current attempt
+
+            // Only provide feedback if the guess was wrong
+            if (userGuess != targetNumber) { 
+                if (userGuess > targetNumber) {
+                    std::cout << "--> Too high! Try again." << std::endl;
+                } else if (userGuess < targetNumber) {
+                    std::cout << "--> Too low! Try again." << std::endl;
+                }
+            }
+        }
+
+        // Check if Stage 1 was a success
+        if (userGuess == targetNumber) {
+            std::cout << "\n*******************************************" << std::endl;
+            std::cout << "STAGE 1 COMPLETE! You guessed the number " << targetNumber << " in " << attempts << " attempts." << std::endl;
+            std::cout << "*******************************************" << std::endl;
+
+            // --- TRANSITION to STAGE 2 (Heads or Tails) ---
+            std::cout << "\n\nPress ENTER to proceed to Stage 2: Heads or Tails...\n";
+            std::cin.ignore(10000, '\n'); // Clear buffer
+            std::cin.get();
+            
+            // Call Stage 2 and check result
+            if (playHeadsOrTails()) {
+                
+                // --- TRANSITION to STAGE 3 (Rock-Paper-Scissors) ---
+                std::cout << "\n\nPress ENTER to proceed to Stage 3: Rock-Paper-Scissors...\n";
+                std::cin.ignore(10000, '\n'); // Clear buffer
+                std::cin.get();
+
+                // Call Stage 3 and check result
+                if (playRockPaperScissors()) {
+                    
+                    // --- TRANSITION to FINAL STAGE (Tic-Tac-Toe) ---
+                    std::cout << "\n\nPress ENTER to proceed to Final Stage: Tic-Tac-Toe...\n";
+                    std::cin.ignore(10000, '\n'); // Clear buffer
+                    std::cin.get();
+
+                    // Call Stage 4 and check result
+                    if (playTicTacToe()) {
+                        // Overall Victory
+                        std::cout << "\n\n*** GRAND VICTORY! ***" << std::endl;
+                        std::cout << "You conquered all four stages and beat the Game Bundle!" << std::endl;
+                        // ADDED NEW MESSAGES
+                        std::cout << "Thank you for playing the game!" << std::endl;
+                        std::cout << "Made by Gemini and thought by Omar" << std::endl;
+                        std::cout << "**********************\n" << std::endl;
+                    } else {
+                        success = false; // Lost Stage 4
+                        failedStage = 4;
+                    }
+                } else {
+                    success = false; // Lost Stage 3
+                    failedStage = 3;
+                }
+            } else {
+                success = false; // Lost Stage 2
+                failedStage = 2;
+            }
+
+        } else {
+            success = false; // Lost Stage 1
+            failedStage = 1;
+        }
+
+        // --- GAME OVER/RETRY LOGIC ---
+        if (!success) {
+            std::cout << "\n===========================================" << std::endl;
+            std::cout << "!!! STAGE FAILED - GAME OVER !!!" << std::endl;
+            
+            // Provide specific loss reason for Stage 1 only
+            if (failedStage == 1) {
+                 std::cout << "You failed to guess the number " << targetNumber << " within " << MAX_ATTEMPTS << " attempts." << std::endl;
+            }
+
+            std::cout << "\nStatus: You failed Stage " << failedStage << ". To retry this stage, you must start the entire bundle over." << std::endl;
+            std::cout << "===========================================" << std::endl;
+        }
+
+        char retryChoice;
+        std::cout << "\nDo you want to retry the game you lost (Y - restarting the whole bundle), or quit (N)? ";
+        
+        // Clear buffer before accepting Y/N input
+        std::cin.clear();
+        std::cin.ignore(10000, '\n'); 
+
+        // Read choice
+        if (!(std::cin >> retryChoice)) {
+            playAgain = false;
+        } else {
+            playAgain = (std::toupper(retryChoice) == 'Y');
+        }
+
+        if (playAgain) {
+            std::cout << "\n------------------ RETRYING GAME ------------------\n" << std::endl;
+        } else {
+            std::cout << "\nThanks for playing the ultimate game bundle!\n" << std::endl;
+        }
+    } // end while(playAgain)
+
+    return 0;
+}
+
+/**
+ * @brief Runs a single round of the Heads or Tails game.
+ * @return true if the player wins, false otherwise.
+ */
+bool playHeadsOrTails() {
+    std::cout << "===========================================" << std::endl;
+    std::cout << "        Stage 2: Heads or Tails            " << std::endl;
+    std::cout << "===========================================" << std::endl;
+    std::cout << "I am flipping a coin. You must guess the result!" << std::endl;
+    
+    char playerChoice = ' ';
+    
+    // 0 = Heads, 1 = Tails
+    const int coinResult = std::rand() % 2; 
+
+    // Loop until valid input is received
+    while (true) {
+        std::cout << "\nEnter your guess (H for Heads, T for Tails): ";
+        std::string input;
+        std::cin >> input;
+        
+        if (input.length() == 1) {
+            // Convert input to uppercase for case-insensitive check
+            playerChoice = std::toupper(input[0]);
+            if (playerChoice == 'H' || playerChoice == 'T') {
+                break; // Valid input received
+            }
+        }
+
+        std::cout << "Invalid input. Please enter 'H' or 'T'." << std::endl;
+        std::cin.clear();
+        std::cin.ignore(10000, '\n');
+    }
+
+    std::string resultString = (coinResult == 0) ? "HEADS" : "TAILS";
+    
+    std::cout << "\n--- Result ---" << std::endl;
+    std::cout << "The coin landed on: " << resultString << std::endl;
+    
+    // Check for win condition
+    bool playerWins = (playerChoice == 'H' && coinResult == 0) || (playerChoice == 'T' && coinResult == 1);
+    
+    if (playerWins) {
+        std::cout << "YOU WIN STAGE 2! Congratulations!" << std::endl;
+        std::cout << "--------------" << std::endl;
+        return true;
+    } else {
+        std::cout << "YOU LOST STAGE 2! Better luck next time." << std::endl;
+        std::cout << "--------------" << std::endl;
+        return false;
+    }
+}
+
+/**
+ * @brief Maps an integer choice (1, 2, or 3) to its string name.
+ * @param choice The integer representing the move (1=Rock, 2=Paper, 3=Scissors).
+ * @return The corresponding move name as a string.
+ */
+std::string choiceToString(int choice) {
+    if (choice == 1) return "Rock";
+    if (choice == 2) return "Paper";
+    if (choice == 3) return "Scissors";
+    return "Invalid Choice";
+}
+
+/**
+ * @brief Generates the computer's choice (1, 2, or 3) for RPS.
+ * @return An integer representing the computer's choice.
+ */
+int getComputerChoice() {
+    // Generate a number between 1 and 3 (1=Rock, 2=Paper, 3=Scissors)
+    return (std::rand() % 3) + 1;
+}
+
+/**
+ * @brief Runs a single round of the Rock-Paper-Scissors game.
+ * @return true if the player wins or ties, false if the player loses.
+ */
+bool playRockPaperScissors() {
+    std::cout << "===========================================" << std::endl;
+    std::cout << "      Stage 3: Rock-Paper-Scissors         " << std::endl;
+    std::cout << "===========================================" << std::endl;
+    std::cout << "Choose your move:" << std::endl;
+    std::cout << "1 - Rock" << std::endl;
+    std::cout << "2 - Paper" << std::endl;
+    std::cout << "3 - Scissors" << std::endl;
+    
+    int playerChoice;
+    int computerChoice = getComputerChoice();
+
+    // Loop until valid input is received
+    while (true) {
+        std::cout << "\nEnter your choice (1, 2, or 3): ";
+        if (!(std::cin >> playerChoice) || playerChoice < 1 || playerChoice > 3) {
+            std::cout << "Invalid input. Please enter 1, 2, or 3." << std::endl;
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+        } else {
+            break; // Valid input received
+        }
+    }
+
+    // Display choices
+    std::cout << "\nYou chose: " << choiceToString(playerChoice) << std::endl;
+    std::cout << "The computer chose: " << choiceToString(computerChoice) << std::endl;
+
+    // Determine the winner
+    std::cout << "\n--- Result ---" << std::endl;
+    
+    // Check win condition
+    bool playerWins = (
+        (playerChoice == 1 && computerChoice == 3) || // Rock beats Scissors
+        (playerChoice == 2 && computerChoice == 1) || // Paper beats Rock
+        (playerChoice == 3 && computerChoice == 2)    // Scissors beats Paper
+    );
+
+    if (playerChoice == computerChoice) {
+        std::cout << "It's a TIE! You both chose " << choiceToString(playerChoice) << "." << std::endl;
+        std::cout << "--------------" << std::endl;
+        return true; // Tie is not a loss, so we allow progression/completion
+    } else if (playerWins) {
+        std::cout << "YOU WON AT ROCK PAPER SCISSORS! Great job!" << std::endl;
+        std::cout << "--------------" << std::endl;
+        return true;
+    } else {
+        std::cout << "YOU LOST AT ROCK PAPER SCISSORS! The computer wins!" << std::endl;
+        std::cout << "--------------" << std::endl;
+        return false;
+    }
+}
+
+/**
+ * @brief Draws the Tic-Tac-Toe board to the console.
+ */
+void drawBoard(const char board[]) {
+    std::cout << "\n";
+    std::cout << "     |     |     " << std::endl;
+    std::cout << "  " << board[0] << "  |  " << board[1] << "  |  " << board[2] << std::endl;
+    std::cout << "_____|_____|_____" << std::endl;
+    std::cout << "     |     |     " << std::endl;
+    std::cout << "  " << board[3] << "  |  " << board[4] << "  |  " << board[5] << std::endl;
+    std::cout << "_____|_____|_____" << std::endl;
+    std::cout << "     |     |     " << std::endl;
+    std::cout << "  " << board[6] << "  |  " << board[7] << "  |  " << board[8] << std::endl;
+    std::cout << "     |     |     " << std::endl;
+}
+
+/**
+ * @brief Checks if there is a win condition on the board.
+ * @return true if there is a winner, false otherwise.
+ */
+bool checkWin(const char board[]) {
+    // Check rows
+    for (int i = 0; i < 9; i += 3) {
+        if (board[i] == board[i+1] && board[i+1] == board[i+2]) return true;
+    }
+    // Check columns
+    for (int i = 0; i < 3; ++i) {
+        if (board[i] == board[i+3] && board[i+3] == board[i+6]) return true;
+    }
+    // Check diagonals
+    if (board[0] == board[4] && board[4] == board[8]) return true;
+    if (board[2] == board[4] && board[4] == board[6]) return true;
+    
+    return false;
+}
+
+
+/**
+ * @brief Runs a single game of Tic-Tac-Toe against the computer.
+ * @return true if the player wins or ties, false if the player loses.
+ */
+bool playTicTacToe() {
+    std::cout << "===========================================" << std::endl;
+    std::cout << "      Final Stage: Tic-Tac-Toe             " << std::endl;
+    std::cout << "===========================================" << std::endl;
+    
+    // Board positions are 1-9, initially filled with their corresponding number for selection.
+    char board[9] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    const char PLAYER_MARKER = 'X';
+    const char COMPUTER_MARKER = 'O';
+    int turns = 0;
+    int choice;
+    bool gameWon = false;
+    
+    std::cout << "You are 'X', the computer is 'O'." << std::endl;
+    std::cout << "Enter the number corresponding to the spot you want to mark." << std::endl;
+
+    // Main game loop: up to 9 turns
+    while (turns < 9 && !gameWon) {
+        drawBoard(board);
+
+        // --- Player Turn ---
+        if (turns % 2 == 0) { // Player goes first (even turns)
+            std::cout << "\nYour turn (X). Enter a number (1-9): ";
+            
+            // Loop for valid player input
+            while (true) {
+                // Check if input is a number, within range, and the spot is not taken.
+                if (!(std::cin >> choice) || choice < 1 || choice > 9 || board[choice - 1] == PLAYER_MARKER || board[choice - 1] == COMPUTER_MARKER) {
+                    std::cout << "Invalid move or position taken. Enter a valid number (1-9): ";
+                    std::cin.clear();
+                    std::cin.ignore(10000, '\n');
+                } else {
+                    board[choice - 1] = PLAYER_MARKER;
+                    break;
+                }
+            }
+        } 
+        
+        // --- Computer Turn ---
+        else { // Computer goes second (odd turns)
+            std::cout << "\nComputer's turn (O)...";
+            int computerMove;
+            
+            // Find a valid random move from 0 to 8
+            do {
+                computerMove = std::rand() % 9; 
+            } while (board[computerMove] == PLAYER_MARKER || board[computerMove] == COMPUTER_MARKER);
+            
+            board[computerMove] = COMPUTER_MARKER;
+            std::cout << " placed 'O' at position " << computerMove + 1 << "." << std::endl;
+        }
+
+        turns++;
+        gameWon = checkWin(board);
+
+        if (gameWon) {
+            drawBoard(board);
+            // If turns is odd (1, 3, 5, 7, 9), the last move was made by the player (X)
+            // If turns is even (2, 4, 6, 8), the last move was made by the computer (O)
+            char winner = (turns % 2 != 0) ? PLAYER_MARKER : COMPUTER_MARKER; 
+            
+            std::cout << "\n--- Result ---" << std::endl;
+            if (winner == PLAYER_MARKER) {
+                std::cout << "YOU WIN THE FINAL STAGE! Excellent strategy!" << std::endl;
+                return true;
+            } else {
+                std::cout << "COMPUTER WINS! 'O' beat 'X'." << std::endl;
+                return false;
+            }
+        }
+    } // end while loop
+
+    // Check for a tie (turns reached 9 and no winner)
+    if (!gameWon) {
+        drawBoard(board);
+        std::cout << "\n--- Result ---" << std::endl;
+        std::cout << "It's a TIE! The board is full." << std::endl;
+        return true; // Tie counts as not losing
+    }
+    
+    return true; // Should be unreachable
+}
